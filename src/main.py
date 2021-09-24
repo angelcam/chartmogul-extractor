@@ -25,5 +25,5 @@ if __name__ == "__main__":
     account_token = conf["account_token"]
     secret_key = conf["#secret_key"]
     logger.info("Configuration loaded")
-    extractor = ChartMogulExtractor('', '', output_path='/data/out/tables')
+    extractor = ChartMogulExtractor(account_token, secret_key, output_path='/data/out/tables')
     asyncio.run(extractor.extract())
