@@ -46,7 +46,7 @@ class ChartMogulExtractor:
         return data["total_pages"]
 
     async def extract(self):
-        semaphore = asyncio.Semaphore(100)
+        semaphore = asyncio.Semaphore(20)
         logger.info("Start extraction")
         customers_fields = ["id", "uuid", "external_id", "name", "email", "status", "customer-since", "attributes",
                             "data_source_uuid", "data_source_uuids", "external_ids", "company", "country", "state",
