@@ -80,4 +80,11 @@ class ChartMogulExtractor:
                      range(1, invoices_page_count+1)]
 
             tasks = customers_tasks + invoices_tasks
-            await asyncio.gather(*tasks)
+            chunk = []
+            for count, task in enumerate(tasks):
+                chunk.append(task)
+                if count % 100 == 0:
+                    await asyncio.gather(*chunk)
+                    chunk = []
+            if chunk:
+                await asyncio.gather(*chunk)
