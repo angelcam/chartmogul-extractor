@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "title": "Parameters",
+  "required": [
+    "account_token",
+    "#secret_key"
+  ],
+  "properties": {
+    "account_token": {
+      "type": "string",
+      "title": "Account token",
+      "default": "",
+      "minLength": 1,
+      "propertyOrder": 1
+    },
+    "#secret_key": {
+      "type": "string",
+      "title": "Secret Key",
+      "format": "password",
+      "default": "",
+      "minLength": 1,
+      "propertyOrder": 2
+    }
+  }
+}

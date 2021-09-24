@@ -1,1 +1,2 @@
-# chartmogul-extractor
+# chartmogul extractor
+Chartmogul extractor for KBC

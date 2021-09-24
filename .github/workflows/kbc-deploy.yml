@@ -1,0 +1,23 @@
+on:
+  release:
+    types: [published]
+name: KBC deploy
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Build docker and deploy to KBD
+    env:
+      APP_IMAGE: keboola-component
+      KBC_DEVELOPERPORTAL_USERNAME: ${{ secrets.KBC_DEVELOPERPORTAL_USERNAME }}
+      KBC_DEVELOPERPORTAL_PASSWORD: ${{ secrets.KBC_DEVELOPERPORTAL_PASSWORD }}
+      KBC_DEVELOPERPORTAL_VENDOR: ${{ secrets.KBC_DEVELOPERPORTAL_VENDOR }}
+      KBC_DEVELOPERPORTAL_APP: ${{ secrets.KBC_DEVELOPERPORTAL_APP }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set tag to env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Build
+        run: docker build . --tag=$APP_IMAGE
+      - name : Deploy
+        run: ./deploy.sh

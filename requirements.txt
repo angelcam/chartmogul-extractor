@@ -1,0 +1,4 @@
+logging_gelf==0.0.26
+aiohttp==3.7.4.post
+aiocsv==1.2.1
+aiofiles==0.7.0
