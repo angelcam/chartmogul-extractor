@@ -23,15 +23,17 @@ class ChartMogulExtractor:
                 content = await res.json()
                 return content
 
-    async def extract_customers_page(self, page_number, writer):
-        logger.info(f"Start extraction of customers page {page_number}")
-        data = await self.get_data_from_page("customers", page_number)
+    async def extract_customers_page(self, page_number, writer, semaphore):
+        async with semaphore:
+            logger.info(f"Start extraction of customers page {page_number}")
+            data = await self.get_data_from_page("customers", page_number)
         await writer.writerows(data["entries"])
         logger.info(f"Finish extraction of customers page {page_number}")
 
-    async def extract_invoices_page(self, page_number, invoice_writer, line_items_writer, transaction_writer):
-        logger.info(f"Start extraction of invoices page {page_number}")
-        data = await self.get_data_from_page("invoices", page_number)
+    async def extract_invoices_page(self, page_number, invoice_writer, line_items_writer, transaction_writer, semaphore):
+        async with semaphore:
+            logger.info(f"Start extraction of invoices page {page_number}")
+            data = await self.get_data_from_page("invoices", page_number)
         for invoice in data["invoices"]:
             invoice_uuid = invoice["uuid"]
             await transaction_writer.writerows([{"invoice_uuid": invoice_uuid, **item} for item in invoice["transactions"]])
@@ -44,6 +46,7 @@ class ChartMogulExtractor:
         return data["total_pages"]
 
     async def extract(self):
+        semaphore = asyncio.Semaphore(100)
         logger.info("Start extraction")
         customers_fields = ["id", "uuid", "external_id", "name", "email", "status", "customer-since", "attributes",
                             "data_source_uuid", "data_source_uuids", "external_ids", "company", "country", "state",
@@ -67,24 +70,16 @@ class ChartMogulExtractor:
                                                   encoding="utf-8", newline="") as lif:
             customer_writer = aiocsv.AsyncDictWriter(cuf, fieldnames=customers_fields, dialect="unix")
             await customer_writer.writeheader()
-            customers_tasks = [asyncio.create_task(self.extract_customers_page(page_number, customer_writer)) for page_number in
+            customers_tasks = [asyncio.create_task(self.extract_customers_page(page_number, customer_writer, semaphore)) for page_number in
                      range(1, customers_page_count+1)]
-
             invoice_writer = aiocsv.AsyncDictWriter(inf, fieldnames=invoices_fields, dialect="unix", extrasaction="ignore")
             transaction_writer = aiocsv.AsyncDictWriter(trf, fieldnames=transactions_fields, dialect="unix", extrasaction="ignore")
             line_items_writer = aiocsv.AsyncDictWriter(lif, fieldnames=line_items_fields, dialect="unix", extrasaction="ignore")
             await invoice_writer.writeheader()
             await transaction_writer.writeheader()
             await line_items_writer.writeheader()
-            invoices_tasks = [asyncio.create_task(self.extract_invoices_page(page_number, invoice_writer, line_items_writer, transaction_writer)) for page_number in
+            invoices_tasks = [asyncio.create_task(self.extract_invoices_page(page_number, invoice_writer, line_items_writer, transaction_writer, semaphore)) for page_number in
                      range(1, invoices_page_count+1)]
 
             tasks = customers_tasks + invoices_tasks
-            chunk = []
-            for count, task in enumerate(tasks):
-                chunk.append(task)
-                if count % 100 == 0:
-                    await asyncio.gather(*chunk)
-                    chunk = []
-            if chunk:
-                await asyncio.gather(*chunk)
+            await asyncio.gather(*tasks)
