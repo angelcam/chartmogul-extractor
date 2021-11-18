@@ -2,8 +2,7 @@ import asyncio
 import os
 from logging import getLogger
 
-import aiocsv
-import aiofiles
+import csv
 import aiohttp
 
 logger = getLogger(__name__)
@@ -27,7 +26,7 @@ class ChartMogulExtractor:
         async with semaphore:
             logger.info(f"Start extraction of customers page {page_number}")
             data = await self.get_data_from_page("customers", page_number)
-        await writer.writerows(data["entries"])
+        writer.writerows(data["entries"])
         logger.info(f"Finish extraction of customers page {page_number}")
 
     async def extract_invoices_page(self, page_number, invoice_writer, line_items_writer, transaction_writer, semaphore):
@@ -36,9 +35,11 @@ class ChartMogulExtractor:
             data = await self.get_data_from_page("invoices", page_number)
         for invoice in data["invoices"]:
             invoice_uuid = invoice["uuid"]
-            await transaction_writer.writerows([{"invoice_uuid": invoice_uuid, **item} for item in invoice["transactions"]])
-            await line_items_writer.writerows([{"invoice_uuid": invoice_uuid, **item} for item in invoice["line_items"]])
-            await invoice_writer.writerow(invoice)
+            if invoice["transactions"]:
+                transaction_writer.writerows([{"invoice_uuid": invoice_uuid, **item} for item in invoice["transactions"]])
+            if invoice["line_items"]:
+                line_items_writer.writerows([{"invoice_uuid": invoice_uuid, **item} for item in invoice["line_items"]])
+            invoice_writer.writerow(invoice)
         logger.info(f"Finish extraction of invoices page {page_number}")
 
     async def get_page_count(self, endpoint):
@@ -62,24 +63,28 @@ class ChartMogulExtractor:
 
         customers_page_count = await self.get_page_count("customers")
         invoices_page_count = await self.get_page_count("invoices")
-        async with aiofiles.open(os.path.join(self.output_path, f"customers.csv"), "w", encoding="utf-8",
-                                 newline="") as cuf, aiofiles.open(os.path.join(self.output_path, f"invoices.csv"), "w",
-                                                                   encoding="utf-8", newline="") as inf, aiofiles.open(
-                os.path.join(self.output_path, f"transactions.csv"), "w", encoding="utf-8",
-                newline="") as trf, aiofiles.open(os.path.join(self.output_path, f"invoice_line_items.csv"), "w",
-                                                  encoding="utf-8", newline="") as lif:
-            customer_writer = aiocsv.AsyncDictWriter(cuf, fieldnames=customers_fields, dialect="unix")
-            await customer_writer.writeheader()
-            customers_tasks = [asyncio.create_task(self.extract_customers_page(page_number, customer_writer, semaphore)) for page_number in
-                     range(1, customers_page_count+1)]
-            invoice_writer = aiocsv.AsyncDictWriter(inf, fieldnames=invoices_fields, dialect="unix", extrasaction="ignore")
-            transaction_writer = aiocsv.AsyncDictWriter(trf, fieldnames=transactions_fields, dialect="unix", extrasaction="ignore")
-            line_items_writer = aiocsv.AsyncDictWriter(lif, fieldnames=line_items_fields, dialect="unix", extrasaction="ignore")
-            await invoice_writer.writeheader()
-            await transaction_writer.writeheader()
-            await line_items_writer.writeheader()
-            invoices_tasks = [asyncio.create_task(self.extract_invoices_page(page_number, invoice_writer, line_items_writer, transaction_writer, semaphore)) for page_number in
-                     range(1, invoices_page_count+1)]
 
-            tasks = customers_tasks + invoices_tasks
-            await asyncio.gather(*tasks)
+        customer_file = open(os.path.join(self.output_path, f"customers.csv"), "w", encoding="utf-8", newline="")
+        invoice_file = open(os.path.join(self.output_path, f"invoices.csv"), "w", encoding="utf-8", newline="")
+        transaction_file = open(os.path.join(self.output_path, f"transactions.csv"), "w", encoding="utf-8", newline="")
+        line_items_file = open(os.path.join(self.output_path, f"invoice_line_items.csv"), "w", encoding="utf-8", newline="")
+
+        customer_writer = csv.DictWriter(customer_file, fieldnames=customers_fields, dialect="unix")
+        customer_writer.writeheader()
+        customers_tasks = [asyncio.create_task(self.extract_customers_page(page_number, customer_writer, semaphore)) for page_number in
+                 range(1, customers_page_count+1)]
+        invoice_writer = csv.DictWriter(invoice_file, fieldnames=invoices_fields, dialect="unix", extrasaction="ignore")
+        transaction_writer = csv.DictWriter(transaction_file, fieldnames=transactions_fields, dialect="unix", extrasaction="ignore")
+        line_items_writer = csv.DictWriter(line_items_file, fieldnames=line_items_fields, dialect="unix", extrasaction="ignore")
+        invoice_writer.writeheader()
+        transaction_writer.writeheader()
+        line_items_writer.writeheader()
+        invoices_tasks = [asyncio.create_task(self.extract_invoices_page(page_number, invoice_writer, line_items_writer, transaction_writer, semaphore)) for page_number in
+                 range(1, invoices_page_count+1)]
+
+        tasks = customers_tasks + invoices_tasks
+        await asyncio.gather(*tasks)
+        customer_file.close()
+        invoice_file.close()
+        transaction_file.close()
+        line_items_file.close()
