@@ -10,8 +10,8 @@ jobs:
       APP_IMAGE: keboola-component
       KBC_DEVELOPERPORTAL_USERNAME: ${{ secrets.KBC_DEVELOPERPORTAL_USERNAME }}
       KBC_DEVELOPERPORTAL_PASSWORD: ${{ secrets.KBC_DEVELOPERPORTAL_PASSWORD }}
-      KBC_DEVELOPERPORTAL_VENDOR: ${{ secrets.KBC_DEVELOPERPORTAL_VENDOR }}
-      KBC_DEVELOPERPORTAL_APP: ${{ secrets.KBC_DEVELOPERPORTAL_APP }}
+      KBC_DEVELOPERPORTAL_VENDOR: angelcam
+      KBC_DEVELOPERPORTAL_APP: angelcam.ex-chartmogul
     steps:
       - name: Checkout
         uses: actions/checkout@v2
