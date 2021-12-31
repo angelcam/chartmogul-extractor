@@ -15,7 +15,7 @@ if __name__ == "__main__":
     plan_table = ci.create_out_table_definition('plans.csv', primary_key=['external_id'])
     customer_table = ci.create_out_table_definition('customers.csv', primary_key=['external_id'])
     invoice_table = ci.create_out_table_definition('invoices.csv', primary_key=['external_id'])
-    transaction_table = ci.create_out_table_definition('transactions.csv', primary_key=['external_id'])
+    transaction_table = ci.create_out_table_definition('transactions.csv', primary_key=['invoice_uuid'])
     invoice_line_item_table = ci.create_out_table_definition('invoice_line_items.csv', primary_key=['external_id'])
     extractor = ChartMogulExtractor(account_token,
                                     secret_key,

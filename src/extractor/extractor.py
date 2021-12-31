@@ -78,7 +78,7 @@ class ChartMogulExtractor:
                             "city", "zip", "lead_created_at", "free_trial_started_at", "address", "mrr", "arr",
                             "billing-system-url", "chartmogul-url", "billing-system-type", "currency", "currency-sign"]
         invoices_fields = ["uuid", "external_id", "date", "due_date", "currency", "customer_uuid"]
-        transactions_fields = ["invoice_uuid", "uuid", "external_id", "type", "date", "result"]
+        transactions_fields = ["invoice_uuid", "uuid", "type", "date", "result"]
         line_items_fields = ["invoice_uuid", "subscription_uuid", "subscription_external_id", "prorated",
                              "service_period_start", "service_period_end", "uuid", "external_id", "type",
                              "amount_in_cents", "quantity", "discount_code", "discount_amount_in_cents",
