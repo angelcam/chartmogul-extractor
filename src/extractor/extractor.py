@@ -3,6 +3,7 @@ from logging import getLogger
 
 import csv
 import aiohttp
+import backoff
 
 logger = getLogger(__name__)
 
@@ -29,10 +30,12 @@ class ChartMogulExtractor:
         except:
             pass
 
+    @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_time=300)
     async def get_data_from_page(self, endpoint, page_number):
         url = f"{self.base_url}{endpoint}"
         async with aiohttp.ClientSession(auth=self.auth) as session:
             async with session.get(url, params={"page": page_number}) as res:
+                res.raise_for_status()
                 content = await res.json()
                 return content
 

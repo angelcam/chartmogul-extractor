@@ -1,2 +1,3 @@
 keboola.component==1.3.6
 aiohttp==3.7.4.post
+backoff==1.11.1
