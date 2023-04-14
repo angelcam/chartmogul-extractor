@@ -92,12 +92,12 @@ class ChartMogulExtractor:
         customers_page_count = await self.get_page_count("customers")
         invoices_page_count = await self.get_page_count("invoices")
 
-        plan_writer = csv.DictWriter(self.plans_file, fieldnames=plan_field, dialect="unix")
+        plan_writer = csv.DictWriter(self.plans_file, fieldnames=plan_field, dialect="unix", extrasaction="ignore")
         plan_writer.writeheader()
         plan_tasks = [asyncio.create_task(self.extract_plan_page(page_number, plan_writer, semaphore)) for page_number
                       in
                       range(1, plans_page_count + 1)]
-        customer_writer = csv.DictWriter(self.customer_file, fieldnames=customers_fields, dialect="unix")
+        customer_writer = csv.DictWriter(self.customer_file, fieldnames=customers_fields, dialect="unix", extrasaction="ignore")
         customer_writer.writeheader()
         customers_tasks = [asyncio.create_task(self.extract_customers_page(page_number, customer_writer, semaphore)) for
                            page_number in
